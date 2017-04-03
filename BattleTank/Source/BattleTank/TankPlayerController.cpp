@@ -2,6 +2,7 @@
 
 #include "BattleTank.h"
 #include "TankPlayerController.h"
+#include "Tank.h"
 
 
 void ATankPlayerController::BeginPlay()
@@ -37,7 +38,7 @@ void ATankPlayerController::AimTowardCrosshair() const
 		FVector HitLocation;
 		if (GetSightRayHitLocation(HitLocation))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Hit Location: %s"), *(HitLocation.ToString()));
+			GetControlledTank()->AimAt(HitLocation);
 		}
 	}
 }
@@ -45,13 +46,47 @@ void ATankPlayerController::AimTowardCrosshair() const
 
 bool ATankPlayerController::GetSightRayHitLocation(FVector& HitLocation) const
 {
-	if (GetControlledTank() != nullptr)
-	{
-		FVector Start = GetPawn()->GetActorLocation();
-		HitLocation = Start + PlayerCameraManager->GetCameraRotation().Vector() * 1000;
+	int32 ViewportSizeX, ViewportSizeY;
+	GetViewportSize(ViewportSizeX, ViewportSizeY);
 
-		return true;
+	FVector2D ScreenLocation(ViewportSizeX * CrossHairXLocation, ViewportSizeY * CrossHairYLocation);
+	
+	FVector WorldDirection;
+	if (GetWorldDirection(ScreenLocation, WorldDirection))
+	{
+		return GetWorldDirectionHitLocation(HitLocation, WorldDirection);
 	}
 
+	return false;
+}
+
+
+bool ATankPlayerController::GetWorldDirection(const FVector2D& ScreenLocation, FVector& WorldDirection) const
+{
+	FVector WorldLocation;  // Not needed
+	return DeprojectScreenPositionToWorld(ScreenLocation.X,
+										  ScreenLocation.Y, 
+										  WorldLocation,
+										  WorldDirection);
+}
+
+
+bool ATankPlayerController::GetWorldDirectionHitLocation(FVector& HitLocation, const FVector& WorldDirection) const
+{
+	FHitResult HitResult;
+	FVector Start = PlayerCameraManager->GetCameraLocation();
+	FVector End = Start + (WorldDirection * LineTraceRange);
+
+	if (GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		Start,
+		End,
+		ECC_Visibility
+	))
+	{
+		HitLocation = HitResult.Location;
+		return true;
+	}
+	HitLocation = FVector(0);
 	return false;
 }

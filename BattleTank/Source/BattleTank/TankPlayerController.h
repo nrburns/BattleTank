@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "Tank.h"
-
 #include "GameFramework/PlayerController.h"
 #include "TankPlayerController.generated.h"
+
+class ATank;
 
 /**
  * 
@@ -22,7 +22,15 @@ private:
 	ATank* GetControlledTank() const;
 
 	void AimTowardCrosshair() const;
-
+	
 	bool GetSightRayHitLocation(FVector& HitLocation) const;
+	bool GetWorldDirection(const FVector2D& ScreenLocation, FVector& WorldDirection) const;
+	bool GetWorldDirectionHitLocation(FVector& HitLocation, const FVector& WorldDirection) const;
 
+	UPROPERTY(EditAnywhere)
+	float CrossHairXLocation = 0.5f;
+	UPROPERTY(EditAnywhere)
+	float CrossHairYLocation = 0.33333f;
+
+	float LineTraceRange = 1000000;  // centimetres
 };
